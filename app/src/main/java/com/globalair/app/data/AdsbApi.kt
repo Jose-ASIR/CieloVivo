@@ -1,4 +1,4 @@
-package com.cielovivo.radar.data
+package com.globalair.app.data
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,10 +15,13 @@ import java.io.IOException
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+/** El servidor pide bajar el ritmo (HTTP 429). [retryAfterSec] viene de la cabecera Retry-After. */
+class RateLimitedException(val retryAfterSec: Long?) : IOException("Límite de peticiones (429)")
+
 /**
- * Cliente para los agregadores ADS-B comunitarios compatibles con el formato readsb "v2"
- * (adsb.lol, airplanes.live). Ambos son gratuitos, sin API key, y cubren todo el mundo gracias
- * a miles de receptores voluntarios.
+ * Cliente para los agregadores ADS-B comunitarios compatibles con el formato readsb
+ * (adsb.lol, adsb.fi). Ambos son gratuitos, sin API key, y cubren todo el mundo gracias
+ * a miles de receptores voluntarios. Limitan a ~1 petición/s por IP.
  */
 class AdsbApi(
     private val client: OkHttpClient = OkHttpClient.Builder()
@@ -26,9 +29,11 @@ class AdsbApi(
         .readTimeout(10, TimeUnit.SECONDS)
         .build(),
 ) {
-    enum class Provider(val label: String, val baseUrl: String) {
-        ADSB_LOL("adsb.lol", "https://api.adsb.lol/v2"),
-        AIRPLANES_LIVE("airplanes.live", "https://api.airplanes.live/v2"),
+    enum class Provider(val label: String, private val urlTemplate: String) {
+        ADSB_LOL("adsb.lol", "https://api.adsb.lol/v2/lat/%.4f/lon/%.4f/dist/%d"),
+        ADSB_FI("adsb.fi", "https://opendata.adsb.fi/api/v3/lat/%.4f/lon/%.4f/dist/%d");
+
+        fun url(lat: Double, lon: Double, radiusNm: Int) = String.format(Locale.US, urlTemplate, lat, lon, radiusNm)
     }
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
@@ -36,22 +41,20 @@ class AdsbApi(
     /** Devuelve todas las aeronaves en un radio (millas náuticas, máx. 250) alrededor de un punto. */
     suspend fun aircraftAround(provider: Provider, lat: Double, lon: Double, radiusNm: Int): List<Aircraft> =
         withContext(Dispatchers.IO) {
-            val url = String.format(
-                Locale.US, "%s/point/%.4f/%.4f/%d",
-                provider.baseUrl, lat, lon, radiusNm.coerceIn(1, MAX_RADIUS_NM),
-            )
+            val url = provider.url(lat, lon, radiusNm.coerceIn(1, MAX_RADIUS_NM))
             val request = Request.Builder()
                 .url(url)
-                .header("User-Agent", "CieloVivo-Android/1.0")
+                .header("User-Agent", "GlobalAir-Android/1.0")
                 .build()
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw IOException("HTTP ${response.code} desde ${provider.label}")
+                if (response.code == 429) throw RateLimitedException(response.header("Retry-After")?.toLongOrNull())
+                if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
                 val body = response.body?.string() ?: throw IOException("Respuesta vacía")
                 val parsed = json.decodeFromString(ReadsbResponse.serializer(), body)
                 // "now" llega en ms en la API v2, pero en segundos en el aircraft.json clásico de readsb.
                 val nowMs = parsed.now?.let { if (it < 1e11) (it * 1000).toLong() else it.toLong() }
                     ?: System.currentTimeMillis()
-                parsed.ac.mapNotNull { it.toAircraft(nowMs) }
+                (parsed.ac ?: parsed.aircraft).orEmpty().mapNotNull { it.toAircraft(nowMs) }
             }
         }
 
@@ -62,7 +65,9 @@ class AdsbApi(
 
 @Serializable
 private data class ReadsbResponse(
-    val ac: List<ReadsbAircraft> = emptyList(),
+    val ac: List<ReadsbAircraft>? = null,
+    /** Nombre del array en las APIs más antiguas (adsb.fi v2). */
+    val aircraft: List<ReadsbAircraft>? = null,
     val now: Double? = null,
 )
 
@@ -91,6 +96,9 @@ private data class ReadsbAircraft(
     val type: String? = null,
 ) {
     fun toAircraft(nowMs: Long): Aircraft? {
+        // Categorías C* = vehículos de superficie y obstáculos (torres, grúas): no vuelan.
+        if (category?.startsWith("C", ignoreCase = true) == true) return null
+        if (t in GROUND_TYPES) return null
         val la = lat ?: return null
         val lo = lon ?: return null
         // alt_baro es un número de pies o la cadena "ground".
@@ -120,6 +128,7 @@ private data class ReadsbAircraft(
 
     companion object {
         private val EMERGENCY_SQUAWKS = setOf("7500", "7600", "7700")
+        private val GROUND_TYPES = setOf("TWR", "GND", "SERV", "EMER", "OBST")
     }
 }
 

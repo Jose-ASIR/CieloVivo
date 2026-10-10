@@ -6,15 +6,26 @@ plugins {
 }
 
 android {
-    namespace = "com.cielovivo.radar"
+    namespace = "com.globalair.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.cielovivo.radar"
+        applicationId = "com.globalair.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
+    }
+
+    // Clave de depuración fija (no es secreta): así cada APK que compile GitHub se instala
+    // encima del anterior sin tener que desinstalar.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {

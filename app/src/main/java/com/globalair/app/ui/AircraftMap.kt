@@ -1,8 +1,9 @@
-package com.cielovivo.radar.ui
+package com.globalair.app.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.RectF
+import android.view.Gravity
 import android.location.LocationManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -20,8 +21,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.cielovivo.radar.data.Aircraft
-import com.cielovivo.radar.data.VehicleType
+import com.globalair.app.data.Aircraft
+import com.globalair.app.data.VehicleType
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -135,6 +136,10 @@ fun AircraftMap(
             map.cameraPosition = CameraPosition.Builder().target(LatLng(40.4168, -3.7038)).zoom(6.0).build()
             map.uiSettings.isRotateGesturesEnabled = true
             map.uiSettings.isCompassEnabled = true
+            // La brújula por defecto queda bajo la barra de estado: se baja a la esquina inferior derecha.
+            val dp = context.resources.displayMetrics.density
+            map.uiSettings.compassGravity = Gravity.BOTTOM or Gravity.END
+            map.uiSettings.setCompassMargins(0, 0, (16 * dp).toInt(), (48 * dp).toInt())
 
             map.setStyle(Style.Builder().fromUri(MAP_STYLE_URL)) { loaded ->
                 setupAircraftLayer(context, loaded)

@@ -1,4 +1,4 @@
-package com.cielovivo.radar.ui
+package com.globalair.app.ui
 
 import android.Manifest
 import android.widget.Toast
@@ -62,9 +62,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.cielovivo.radar.data.AdsbApi
-import com.cielovivo.radar.data.Aircraft
-import com.cielovivo.radar.data.VehicleType
+import com.globalair.app.data.AdsbApi
+import com.globalair.app.data.Aircraft
+import com.globalair.app.data.VehicleType
 import kotlin.math.roundToInt
 
 private val Panel = Color(0xE60F172A)
@@ -133,7 +133,7 @@ fun RadarScreen(vm: RadarViewModel = viewModel()) {
 
         if (state.selected == null) {
             Text(
-                "Datos ADS-B: ${state.provider.label} (ODbL) · Mapa © OpenStreetMap",
+                "Datos ADS-B: ${state.activeProvider.label} · Mapa © OpenStreetMap",
                 color = Color(0xFF94A3B8),
                 fontSize = 10.sp,
                 modifier = Modifier
@@ -147,54 +147,49 @@ fun RadarScreen(vm: RadarViewModel = viewModel()) {
 
 @Composable
 private fun TopBar(state: RadarState, vm: RadarViewModel) {
-    Row(
-        Modifier
-            .padding(horizontal = 12.dp)
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Column(Modifier.padding(horizontal = 12.dp)) {
         OutlinedTextField(
             value = state.query,
             onValueChange = vm::setQuery,
-            placeholder = { Text("Vuelo, matrícula, tipo…") },
+            placeholder = { Text("Vuelo, matrícula, tipo…", maxLines = 1) },
             leadingIcon = { Icon(Icons.Default.Search, null) },
             trailingIcon = {
                 if (state.query.isNotEmpty()) IconButton(onClick = { vm.setQuery("") }) { Icon(Icons.Default.Close, "Borrar") }
             },
             singleLine = true,
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(28.dp),
             modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(24.dp))
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(28.dp))
                 .background(Panel),
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.height(6.dp))
         LiveBadge(state)
     }
 }
 
 @Composable
 private fun LiveBadge(state: RadarState) {
-    val stale = state.lastUpdateMs == 0L || System.currentTimeMillis() - state.lastUpdateMs > 15_000
-    Column(
+    val stale = state.lastUpdateMs == 0L || System.currentTimeMillis() - state.lastUpdateMs > RadarViewModel.STALE_MS
+    Row(
         Modifier
             .clip(RoundedCornerShape(16.dp))
             .background(Panel)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(if (stale) Color(0xFFF59E0B) else Color(0xFF22C55E)),
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(if (stale) "CONECTANDO" else "EN DIRECTO", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Box(
+            Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(if (stale) Color(0xFFF59E0B) else Color(0xFF22C55E)),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(if (stale) "CONECTANDO" else "EN DIRECTO", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text("  ·  ${state.aircraft.size} en vuelo", color = Color(0xFFCBD5E1), fontSize = 12.sp)
+        state.error?.let {
+            Text("  ·  $it", color = Color(0xFFFCA5A5), fontSize = 11.sp, maxLines = 1)
         }
-        Text("${state.aircraft.size} en vuelo", color = Color(0xFFCBD5E1), fontSize = 12.sp)
-        state.error?.let { Text(it, color = Color(0xFFFCA5A5), fontSize = 9.sp, maxLines = 2) }
     }
 }
 

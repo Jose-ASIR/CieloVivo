@@ -1,4 +1,4 @@
 -keepattributes *Annotation*, InnerClasses
--keep,includedescriptorclasses class com.cielovivo.radar.**$$serializer { *; }
--keepclassmembers class com.cielovivo.radar.** { *** Companion; }
--keepclasseswithmembers class com.cielovivo.radar.** { kotlinx.serialization.KSerializer serializer(...); }
+-keep,includedescriptorclasses class com.globalair.app.**$$serializer { *; }
+-keepclassmembers class com.globalair.app.** { *** Companion; }
+-keepclasseswithmembers class com.globalair.app.** { kotlinx.serialization.KSerializer serializer(...); }

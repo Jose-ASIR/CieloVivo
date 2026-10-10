@@ -1,4 +1,4 @@
-package com.cielovivo.radar.data
+package com.globalair.app.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

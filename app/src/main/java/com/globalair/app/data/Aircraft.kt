@@ -1,4 +1,4 @@
-package com.cielovivo.radar.data
+package com.globalair.app.data
 
 import kotlin.math.PI
 import kotlin.math.asin

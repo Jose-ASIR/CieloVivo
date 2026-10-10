@@ -1,4 +1,4 @@
-# CieloVivo: radar aéreo en directo para Android
+# GlobalAir: radar aéreo en directo para Android
 
 Un mapa en tiempo real con **todo lo que vuela ahora mismo**: aviones comerciales, avionetas, reactores, helicópteros, planeadores, globos y dirigibles, drones, paracaidistas, vehículos espaciales y aeronaves militares.
 
@@ -8,8 +8,8 @@ Un mapa en tiempo real con **todo lo que vuela ahora mismo**: aviones comerciale
  Receptores ADS-B/MLAT voluntarios (miles, en todo el mundo)
                  │
                  ▼
-   adsb.lol  ◄──conmutación automática──►  airplanes.live     (API REST, sin clave)
-                 │  GET /v2/point/{lat}/{lon}/{radio_nm}   cada 4 s
+   adsb.lol  ◄──fuente de reserva──►  adsb.fi            (API REST, sin clave)
+                 │  GET .../lat/{lat}/lon/{lon}/dist/{nm}   cada 5 s
                  ▼
  ┌──────────────────────── App Android ────────────────────────┐
  │ AdsbApi (OkHttp + kotlinx.serialization)                    │
@@ -25,7 +25,7 @@ Un mapa en tiempo real con **todo lo que vuela ahora mismo**: aviones comerciale
  └─────────────────────────────────────────────────────────────┘
 ```
 
-**Por qué parece "al instante":** los datos llegan cada 4 s, pero cada medio segundo la app recalcula dónde está cada aeronave con su velocidad y rumbo (`Aircraft.extrapolatedTo`). Así los iconos avanzan de forma continua en lugar de dar saltos. La extrapolación tiene un tope de 30 s para no inventar trayectorias si se pierde la señal.
+**Por qué parece "al instante":** los datos llegan cada 5 s, pero cada medio segundo la app recalcula dónde está cada aeronave con su velocidad y rumbo (`Aircraft.extrapolatedTo`). Así los iconos avanzan de forma continua en lugar de dar saltos. La extrapolación tiene un tope de 30 s para no inventar trayectorias si se pierde la señal.
 
 ## 2. Tipos de vehículo
 
@@ -59,7 +59,7 @@ Se detectan a partir de la categoría de emisor ADS-B (DO-260B), con la bandera 
 ## 4. Estructura
 
 ```
-app/src/main/java/com/cielovivo/radar/
+app/src/main/java/com/globalair/app/
 ├── MainActivity.kt            Tema oscuro + edge-to-edge
 ├── data/
 │   ├── Aircraft.kt            Modelo, VehicleType, navegación a estima
@@ -82,7 +82,7 @@ Necesitas Android Studio (Ladybug o posterior) o el SDK de Android 35 con JDK 17
 
 ## 6. Límites y licencias
 
-- **adsb.lol** publica sus datos con licencia **ODbL** (hay que atribuirlo, y la app lo hace en pantalla). **airplanes.live** es gratuito solo para uso no comercial. Ambos piden un máximo de unas 1 petición/s, y la app hace 1 cada 4 s.
+- **adsb.lol** publica sus datos con licencia **ODbL** (hay que atribuirlo, y la app lo hace en pantalla). **adsb.fi** es gratuito para uso personal y no comercial. Ambos piden un máximo de unas 1 petición/s, y la app hace 1 cada 5 s como máximo, con espera extra si el servidor responde 429.
 - El radio máximo por consulta es de 250 NM. Si alejas el zoom más allá de eso, solo se cargan las aeronaves en un radio de 250 NM alrededor del centro del mapa.
 - **Drones:** solo aparecen los que emiten ADS-B (B6). La mayoría de los drones de consumo usan Remote ID por Bluetooth/Wi-Fi, que no llega a estas redes.
 - **Satélites y la ISS** no transmiten ADS-B. Están en la hoja de ruta.

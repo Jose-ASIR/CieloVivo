@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "CieloVivo"
+rootProject.name = "GlobalAir"
 include(":app")
