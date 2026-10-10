@@ -2,11 +2,14 @@ name: Diagnostico APIs
 on:
   push:
     paths: ['.github/workflows/diagnostico.yml']
+permissions:
+  contents: write
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - run: |
+          exec > out.txt 2>&1
           for u in "https://api.adsb.lol/v2/point/37.18/-3.6/100" "https://api.airplanes.live/v2/point/37.18/-3.6/100" "https://api.adsb.lol/v2/point/51.47/-0.45/100" "https://api.airplanes.live/v2/point/51.47/-0.45/100"; do
             echo "===== $u"
             curl -sS -m 20 -A "GlobalAir-Android/1.0" -D - -o body.json "$u" | head -20
@@ -23,3 +26,9 @@ jobs:
           PY
             sleep 2
           done
+      - if: always()
+        run: |
+          mkdir r && mv out.txt r/ && cd r
+          git init -q -b diagnostico && git add out.txt
+          git -c user.name=ci -c user.email=ci@x commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diagnostico
