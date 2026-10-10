@@ -1,0 +1,47 @@
+===== https://opendata.adsb.fi/api/v2/lat/37.18/lon/-3.6/dist/100
+HTTP 200
+{"now": 1791668156.000
+,"aircraft":[
+{"hex":"4aca88","type":"adsb_icao","flight":"NSZ4528 ","r":"SE-RTH","t":"B38M","desc":"BOEING 737 MAX 8","alt_baro":36000,"alt_geom":37725,"gs":400.1,"ias":267,"tas":466,"mach":0.804,"wd":42,"ws":70,"oat":-52,"tat":-23,"track":19.11,"track_rate":0.00,"roll":-0.35
+===== https://opendata.adsb.fi/api/v3/lat/37.18/lon/-3.6/dist/100
+HTTP 200
+{"ac":[
+{"hex":"4aca88","type":"adsb_icao","flight":"NSZ4528 ","r":"SE-RTH","t":"B38M","desc":"BOEING 737 MAX 8","alt_baro":36000,"alt_geom":37725,"gs":400.1,"ias":267,"tas":466,"mach":0.804,"wd":42,"ws":70,"oat":-52,"tat":-23,"track":19.11,"track_rate":0.00,"roll":-0.35,"mag_heading":22.32,"true_he
+===== https://api.adsb.one/v2/point/37.18/-3.6/100
+HTTP 403
+<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!
+===== https://api.adsb.lol/v2/lat/37.18/lon/-3.6/dist/100
+HTTP 200
+{"ac":[
+{"hex":"4aca88","type":"adsb_icao","flight":"NSZ4528 ","r":"SE-RTH","t":"B38M","alt_baro":36000,"alt_geom":37725,"gs":400.1,"ias":267,"tas":466,"mach":0.804,"wd":42,"ws":70,"oat":-52,"tat":-23,"track":19.11,"track_rate":0.00,"roll":-0.35,"mag_heading":22.32,"true_heading":22.43,"baro_rate":0
+===== adsb.lol rafaga 1 req/s
+200 0.374659s
+200 0.438517s
+200 0.354789s
+200 0.401439s
+200 1.194924s
+429 0.443677s
+200 0.361668s
+200 0.394404s
+200 0.365977s
+200 0.370475s
+200 0.404491s
+429 0.351706s
+429 0.341707s
+429 0.344854s
+429 0.346957s
+===== adsb.lol rafaga sin pausa
+200 0.561755s
+200 0.977839s
+429 0.338550s
+429 0.332393s
+200 0.635460s
+429 0.368763s
+429 0.343743s
+429 0.343112s
+200 0.573569s
+429 0.319997s
