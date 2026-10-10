@@ -1,0 +1,25 @@
+name: Diagnostico APIs
+on:
+  push:
+    paths: ['.github/workflows/diagnostico.yml']
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for u in "https://api.adsb.lol/v2/point/37.18/-3.6/100" "https://api.airplanes.live/v2/point/37.18/-3.6/100" "https://api.adsb.lol/v2/point/51.47/-0.45/100" "https://api.airplanes.live/v2/point/51.47/-0.45/100"; do
+            echo "===== $u"
+            curl -sS -m 20 -A "GlobalAir-Android/1.0" -D - -o body.json "$u" | head -20
+            head -c 600 body.json; echo
+            python3 - <<'PY' || true
+          import json, collections
+          d = json.load(open('body.json'))
+          ac = d.get('ac') or []
+          print('keys', sorted(d.keys()), 'now', d.get('now'), 'total', len(ac))
+          print('category', collections.Counter(a.get('category') for a in ac).most_common())
+          print('dbFlags', collections.Counter(a.get('dbFlags') for a in ac).most_common())
+          print('types', collections.Counter(type(a.get(k)).__name__ + ':' + k for a in ac for k in ('alt_baro','alt_geom','baro_rate','geom_rate','gs','track','now','seen_pos','squawk','emergency')).most_common())
+          print('t', collections.Counter(a.get('t') for a in ac).most_common(40))
+          PY
+            sleep 2
+          done
