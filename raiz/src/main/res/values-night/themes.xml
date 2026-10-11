@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.Raiz" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">#FF0F1714</item>
+    </style>
+</resources>

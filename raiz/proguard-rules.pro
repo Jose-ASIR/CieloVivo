@@ -1,0 +1,4 @@
+-keepattributes *Annotation*, InnerClasses
+-keep,includedescriptorclasses class com.raiz.toc.**$$serializer { *; }
+-keepclassmembers class com.raiz.toc.** { *** Companion; }
+-keepclasseswithmembers class com.raiz.toc.** { kotlinx.serialization.KSerializer serializer(...); }

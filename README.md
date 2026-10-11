@@ -97,3 +97,9 @@ Necesitas Android Studio (Ladybug o posterior) o el SDK de Android 35 con JDK 17
 5. **Alertas:** aviso cuando pase un militar, un globo o una emergencia cerca de ti (WorkManager + notificaciones).
 6. **Rutas y fotos:** origen y destino desde adsbdb.com, fotos desde planespotters.net.
 7. **WebSocket propio:** un backend que agregue y empuje deltas para ahorrar batería y datos.
+
+---
+
+## Otra app en este repositorio: Raíz (TOC)
+
+En [`raiz/`](raiz/README.md) hay una segunda app independiente para practicar exposición con prevención de respuesta en el trastorno obsesivo-compulsivo. Se compila con `./gradlew :raiz:assembleDebug` y GitHub Actions la publica como artefacto **Raiz-apk**.
