@@ -36,9 +36,11 @@ fun LearnScreen(onCrisis: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            Text("Aprender", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Entender cómo funciona el TOC es el primer paso para dejar de obedecerlo.",
-                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column {
+                Text("Aprender", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text("Entender cómo funciona el TOC es el primer paso para dejar de obedecerlo.",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
         itemsIndexed(Content.lessons) { index, lesson ->
             val expanded = open == index

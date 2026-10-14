@@ -17,6 +17,8 @@ data class ExposureStep(
     /** Tema del TOC, para agrupar y variar las exposiciones. */
     val theme: Theme = Theme.OTHER,
     val createdAt: Long = 0,
+    /** Predicción temida sugerida (por ejemplo, por la IA); rellena la sesión de exposición. */
+    val prediction: String = "",
 )
 
 @Serializable

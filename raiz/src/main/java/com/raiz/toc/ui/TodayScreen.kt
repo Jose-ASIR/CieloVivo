@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -46,6 +48,10 @@ fun TodayScreen(
     onCheck: () -> Unit,
     onOpenLadder: () -> Unit,
     onCrisis: () -> Unit,
+    aiEnabled: Boolean = false,
+    onCoach: () -> Unit = {},
+    onRitualPlan: () -> Unit = {},
+    onAiSettings: () -> Unit = {},
 ) {
     val now = remember(data) { RaizViewModel.now() }
     val week = remember(data) { Progress.lastWeek(data, now) }
@@ -62,6 +68,7 @@ fun TodayScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Hoy", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f))
+                IconButton(onClick = onAiSettings) { Icon(Icons.Filled.Settings, "Ajustes de IA") }
                 IconButton(onClick = onCrisis) { Icon(Icons.Filled.Phone, "Ayuda urgente") }
             }
         }
@@ -74,6 +81,24 @@ fun TodayScreen(
                 Icon(Icons.Filled.Bolt, null)
                 Spacer(Modifier.width(8.dp))
                 Text("Tengo un impulso ahora", style = MaterialTheme.typography.titleMedium)
+            }
+        }
+        item {
+            SectionCard(container = MaterialTheme.colorScheme.tertiaryContainer) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.AutoAwesome, null)
+                    Text("  Acompañante IA", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+                if (aiEnabled) {
+                    Text("Te ayuda a aplazar y recortar rituales, y a perder el miedo a no hacerlos. No te dará certezas: te ayudará a vivir con la duda.")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilledTonalButton(onClick = onCoach) { Text("Hablar ahora") }
+                        OutlinedButton(onClick = onRitualPlan) { Text("Soltar un ritual") }
+                    }
+                } else {
+                    Text("Opcional: activa una IA que te acompañe en los momentos difíciles y te ayude a planificar cómo soltar tus rituales.")
+                    OutlinedButton(onClick = onAiSettings) { Text("Activar") }
+                }
             }
         }
         item {

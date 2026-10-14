@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -53,6 +54,7 @@ fun LadderScreen(
     onAdd: (ExposureStep) -> Unit,
     onDelete: (Long) -> Unit,
     onExpose: (ExposureStep) -> Unit,
+    onAiLadder: () -> Unit = {},
 ) {
     var adding by remember { mutableStateOf(false) }
     var toDelete by remember { mutableStateOf<ExposureStep?>(null) }
@@ -66,14 +68,20 @@ fun LadderScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Text("Mi escalera", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text(
-                    "Apunta situaciones que te disparan el TOC, de más fáciles a más difíciles. " +
-                        "Arriba, lo más difícil; empieza por abajo (malestar 30-50). Un peldaño se consolida tras " +
-                        "${Progress.SESSIONS_TO_CONSOLIDATE} prácticas sin ritual en las que ya no crees la predicción.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column {
+                    Text("Mi escalera", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Apunta situaciones que te disparan el TOC, de más fáciles a más difíciles. " +
+                            "Arriba, lo más difícil; empieza por abajo (malestar 30-50). Un peldaño se consolida tras " +
+                            "${Progress.SESSIONS_TO_CONSOLIDATE} prácticas sin ritual en las que ya no crees la predicción.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TextButton(onClick = onAiLadder) {
+                        Icon(Icons.Filled.AutoAwesome, null)
+                        Text("  Crear peldaños con IA")
+                    }
+                }
             }
             if (steps.isEmpty()) {
                 item {

@@ -13,8 +13,8 @@ android {
         applicationId = "com.raiz.toc"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     // Misma clave de depuración fija que GlobalAir: cada APK se instala encima del anterior.
@@ -39,6 +39,18 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
+    packaging {
+        resources {
+            // Archivos repetidos en las dependencias del SDK de Anthropic.
+            excludes += setOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/INDEX.LIST",
+                "META-INF/versions/9/module-info.class",
+            )
+        }
+    }
 }
 
 dependencies {
@@ -53,5 +65,6 @@ dependencies {
     debugImplementation(libs.compose.tooling)
     implementation(libs.serialization.json)
     implementation(libs.coroutines.android)
+    implementation(libs.anthropic.java)
     testImplementation(libs.junit)
 }

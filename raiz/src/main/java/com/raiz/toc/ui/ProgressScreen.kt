@@ -43,7 +43,7 @@ import com.raiz.toc.data.RitualOutcome
 import com.raiz.toc.data.WeeklyCheck
 
 @Composable
-fun ProgressScreen(data: AppData, onCheck: () -> Unit, onReset: () -> Unit) {
+fun ProgressScreen(data: AppData, onCheck: () -> Unit, onReset: () -> Unit, onSummary: (() -> Unit)? = null) {
     val now = remember(data) { RaizViewModel.now() }
     val week = remember(data) { Progress.lastWeek(data, now) }
     val checks = remember(data) { data.checks.sortedBy { it.at } }
@@ -56,6 +56,16 @@ fun ProgressScreen(data: AppData, onCheck: () -> Unit, onReset: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { Text("Progreso", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
+
+        if (onSummary != null && (data.sessions.isNotEmpty() || data.urges.isNotEmpty())) {
+            item {
+                SectionCard(container = MaterialTheme.colorScheme.tertiaryContainer) {
+                    Text("Resumen con IA", fontWeight = FontWeight.Bold)
+                    Text("Analiza tus registros, detecta patrones y propone siguientes pasos. Puedes compartirlo con tu terapeuta.")
+                    OutlinedButton(onClick = onSummary) { Text("Generar resumen") }
+                }
+            }
+        }
 
         item {
             SectionCard {

@@ -11,9 +11,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,6 +31,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,6 +43,7 @@ import com.raiz.toc.data.ExposureSession
 import com.raiz.toc.data.ExposureStep
 import com.raiz.toc.data.RitualOutcome
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private enum class ExpStage { PREP, RUN, REVIEW, DONE }
 
@@ -50,9 +54,18 @@ private const val SAMPLE_EVERY_SEC = 60
 private const val SUGGESTED_MIN_SEC = 10 * 60
 
 @Composable
-fun ExposureFlow(step: ExposureStep, onSave: (ExposureSession) -> Unit, onClose: () -> Unit) {
+fun ExposureFlow(
+    step: ExposureStep,
+    onSave: (ExposureSession) -> Unit,
+    onClose: () -> Unit,
+    suggestPrediction: (suspend () -> Result<String>)? = null,
+    onCoach: ((String?) -> Unit)? = null,
+) {
     var stage by remember { mutableStateOf(ExpStage.PREP) }
-    var prediction by remember { mutableStateOf("") }
+    var prediction by remember { mutableStateOf(step.prediction) }
+    var suggesting by remember { mutableStateOf(false) }
+    var suggestError by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
     var belief by remember { mutableIntStateOf(70) }
     var distress by remember { mutableIntStateOf(step.expectedDistress) }
     val samples = remember { mutableStateListOf<Int>() }
@@ -94,6 +107,23 @@ fun ExposureFlow(step: ExposureStep, onSave: (ExposureSession) -> Unit, onClose:
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
                 )
+                if (suggestPrediction != null) {
+                    TextButton(
+                        onClick = {
+                            suggesting = true
+                            suggestError = null
+                            scope.launch {
+                                suggestPrediction().onSuccess { prediction = it }.onFailure { suggestError = it.message }
+                                suggesting = false
+                            }
+                        },
+                        enabled = !suggesting,
+                    ) {
+                        Icon(Icons.Filled.AutoAwesome, null)
+                        Text(if (suggesting) "  Pensando…" else "  Ayúdame a formularla (IA)")
+                    }
+                    suggestError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                }
                 PercentSlider("¿Cuánto te lo crees ahora mismo? (%)", belief, { belief = it })
                 Text("2. Las reglas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Content.exposureRules.forEach { Text("• $it") }
@@ -141,6 +171,17 @@ fun ExposureFlow(step: ExposureStep, onSave: (ExposureSession) -> Unit, onClose:
                 if (elapsedSec < SUGGESTED_MIN_SEC) {
                     Text("Intenta seguir al menos hasta los ${SUGGESTED_MIN_SEC / 60} minutos, o hasta que puedas comprobar tu predicción.",
                         style = MaterialTheme.typography.bodySmall)
+                }
+                if (onCoach != null) {
+                    FilledTonalButton(
+                        onClick = {
+                            onCoach(
+                                "Estoy en una exposición: \"${step.situation}\", sin ${step.ritual}. " +
+                                    "Mi malestar ahora es $distress/100 y tengo ganas de hacer el ritual. Ayúdame a aguantar.",
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Hablar con el acompañante IA") }
                 }
                 Button(
                     onClick = {

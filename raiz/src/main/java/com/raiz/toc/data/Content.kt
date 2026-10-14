@@ -84,6 +84,16 @@ object Content {
             ),
         ),
         Lesson(
+            title = "Usar bien el acompañante IA",
+            summary = "Una ayuda para soltar rituales, no una nueva fuente de certezas.",
+            paragraphs = listOf(
+                "El acompañante IA (opcional) está diseñado para ayudarte a aplazar, recortar y dejar rituales, y a convertir el miedo a no hacerlos en experimentos: \"si no lo hago, ¿qué temo que pase? Vamos a comprobarlo\".",
+                "No te dirá que todo está bien ni comprobará cosas por ti. Si le pides certezas, te lo señalará con cariño: preguntarle a una IA una y otra vez es otra forma de buscar tranquilización, y eso alimenta el TOC.",
+                "Úsalo en el momento del impulso (desde \"Tengo un impulso ahora\" o durante una exposición), para preparar un plan gradual con \"Soltar un ritual\" o para generar un resumen de tu progreso que puedas enseñar a tu terapeuta.",
+                "Es una IA: puede equivocarse y no sustituye a un profesional. Revisa siempre los pasos que te propone y descarta los que no te encajen.",
+            ),
+        ),
+        Lesson(
             title = "Medicación y otras ayudas",
             summary = "Cuándo pedir ayuda profesional y qué opciones existen.",
             paragraphs = listOf(

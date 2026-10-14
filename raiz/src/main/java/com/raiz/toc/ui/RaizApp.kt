@@ -54,6 +54,8 @@ sealed interface Flow {
     data object Urge : Flow
     data class Exposure(val step: ExposureStep) : Flow
     data object Check : Flow
+    data object AiSettings : Flow
+    data class AiPlan(val mode: PlanMode) : Flow
 }
 
 @Composable
@@ -73,28 +75,99 @@ fun RaizApp(vm: RaizViewModel = viewModel()) {
 
 @Composable
 private fun MainScreen(data: AppData, vm: RaizViewModel) {
+    val ai by vm.ai.collectAsStateWithLifecycle()
+    val chat by vm.chat.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(Tab.TODAY) }
     var flow by remember { mutableStateOf<Flow?>(null) }
     var showCrisis by remember { mutableStateOf(false) }
+    var showSummary by remember { mutableStateOf(false) }
+    /** El chat se abre por encima de todo (texto inicial opcional), sin cerrar el flujo de debajo. */
+    var coachSeed by remember { mutableStateOf<String?>(null) }
+    var coachOpen by remember { mutableStateOf(false) }
 
-    val current = flow
-    if (current != null) {
-        val close = { flow = null }
-        Box(Modifier.fillMaxSize().safeDrawingPadding()) {
-            when (current) {
-                Flow.Urge -> UrgeFlow(onSave = { vm.saveUrge(it) }, onClose = close)
-                is Flow.Exposure -> ExposureFlow(
-                    step = current.step,
-                    onSave = { vm.saveSession(it) },
-                    onClose = close,
-                )
-                Flow.Check -> CheckFlow(onSave = { vm.saveCheck(it) }, onClose = close)
+    val openCoach: (String?) -> Unit = { seed -> coachSeed = seed; coachOpen = true }
+    val aiOrNull: ((String?) -> Unit)? = if (ai.enabled) openCoach else null
+
+    Box(Modifier.fillMaxSize()) {
+        val current = flow
+        if (current != null) {
+            val close = { flow = null }
+            Box(Modifier.fillMaxSize().safeDrawingPadding()) {
+                when (current) {
+                    Flow.Urge -> UrgeFlow(onSave = { vm.saveUrge(it) }, onClose = close, onCoach = aiOrNull)
+                    is Flow.Exposure -> ExposureFlow(
+                        step = current.step,
+                        onSave = { vm.saveSession(it) },
+                        onClose = close,
+                        suggestPrediction = if (ai.enabled) suspend { vm.suggestPrediction(current.step) } else null,
+                        onCoach = aiOrNull,
+                    )
+                    Flow.Check -> CheckFlow(onSave = { vm.saveCheck(it) }, onClose = close)
+                    Flow.AiSettings -> AiSettingsFlow(ai, onSave = vm::saveAi, onClose = close)
+                    is Flow.AiPlan ->
+                        if (!ai.enabled) AiNotConfigured(onSetup = { flow = Flow.AiSettings }, onClose = close)
+                        else AiPlanFlow(
+                            mode = current.mode,
+                            generate = { a, b ->
+                                if (current.mode == PlanMode.RITUAL) vm.planRitual(a, b) else vm.suggestLadder(a)
+                            },
+                            onAdd = vm::addSteps,
+                            onClose = close,
+                        )
+                }
+            }
+        } else {
+            Tabs(
+                data = data,
+                tab = tab,
+                onTab = { tab = it },
+                aiEnabled = ai.enabled,
+                onFlow = { flow = it },
+                onCoach = openCoach,
+                onCrisis = { showCrisis = true },
+                onSummary = { showSummary = true },
+                vm = vm,
+            )
+        }
+
+        if (coachOpen) {
+            BackHandler { coachOpen = false }
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                Box(Modifier.safeDrawingPadding()) {
+                    if (!ai.enabled) {
+                        AiNotConfigured(onSetup = { coachOpen = false; flow = Flow.AiSettings }, onClose = { coachOpen = false })
+                    } else {
+                        CoachChat(
+                            state = chat,
+                            seed = coachSeed,
+                            onSend = vm::sendChat,
+                            onDismissError = vm::clearChatError,
+                            onNewChat = vm::newChat,
+                            onCrisis = { showCrisis = true },
+                            onClose = { coachOpen = false },
+                        )
+                    }
+                }
             }
         }
-        return
     }
+    if (showCrisis) CrisisDialog { showCrisis = false }
+    if (showSummary) SummaryDialog(summarize = vm::summarize, onDismiss = { showSummary = false })
+}
 
-    BackHandler(enabled = tab != Tab.TODAY) { tab = Tab.TODAY }
+@Composable
+private fun Tabs(
+    data: AppData,
+    tab: Tab,
+    onTab: (Tab) -> Unit,
+    aiEnabled: Boolean,
+    onFlow: (Flow) -> Unit,
+    onCoach: (String?) -> Unit,
+    onCrisis: () -> Unit,
+    onSummary: () -> Unit,
+    vm: RaizViewModel,
+) {
+    BackHandler(enabled = tab != Tab.TODAY) { onTab(Tab.TODAY) }
 
     Scaffold(
         bottomBar = {
@@ -102,7 +175,7 @@ private fun MainScreen(data: AppData, vm: RaizViewModel) {
                 Tab.entries.forEach {
                     NavigationBarItem(
                         selected = tab == it,
-                        onClick = { tab = it },
+                        onClick = { onTab(it) },
                         icon = { Icon(it.icon, null) },
                         label = { Text(it.label) },
                     )
@@ -114,28 +187,33 @@ private fun MainScreen(data: AppData, vm: RaizViewModel) {
             when (tab) {
                 Tab.TODAY -> TodayScreen(
                     data = data,
-                    onUrge = { flow = Flow.Urge },
-                    onExpose = { flow = Flow.Exposure(it) },
-                    onCheck = { flow = Flow.Check },
-                    onOpenLadder = { tab = Tab.LADDER },
-                    onCrisis = { showCrisis = true },
+                    aiEnabled = aiEnabled,
+                    onUrge = { onFlow(Flow.Urge) },
+                    onExpose = { onFlow(Flow.Exposure(it)) },
+                    onCheck = { onFlow(Flow.Check) },
+                    onOpenLadder = { onTab(Tab.LADDER) },
+                    onCrisis = onCrisis,
+                    onCoach = { onCoach(null) },
+                    onRitualPlan = { onFlow(Flow.AiPlan(PlanMode.RITUAL)) },
+                    onAiSettings = { onFlow(Flow.AiSettings) },
                 )
                 Tab.LADDER -> LadderScreen(
                     data = data,
                     onAdd = vm::addStep,
                     onDelete = vm::deleteStep,
-                    onExpose = { flow = Flow.Exposure(it) },
+                    onExpose = { onFlow(Flow.Exposure(it)) },
+                    onAiLadder = { onFlow(Flow.AiPlan(PlanMode.LADDER)) },
                 )
-                Tab.LEARN -> LearnScreen(onCrisis = { showCrisis = true })
+                Tab.LEARN -> LearnScreen(onCrisis = onCrisis)
                 Tab.PROGRESS -> ProgressScreen(
                     data = data,
-                    onCheck = { flow = Flow.Check },
+                    onCheck = { onFlow(Flow.Check) },
                     onReset = vm::resetAll,
+                    onSummary = if (aiEnabled) onSummary else null,
                 )
             }
         }
     }
-    if (showCrisis) CrisisDialog { showCrisis = false }
 }
 
 @Composable
@@ -166,7 +244,8 @@ private fun IntroScreen(onAccept: () -> Unit) {
                     "• Úsala como complemento a la terapia o como primer paso mientras buscas ayuda.\n" +
                     "• Las exposiciones generan malestar a propósito. Si el TOC es muy intenso, empieza con un profesional.\n" +
                     "• Si tienes pensamientos de hacerte daño, llama al 024 o al 112.\n" +
-                    "• Todo lo que escribas se queda en tu teléfono. La app no usa internet.",
+                    "• Todo lo que escribas se queda en tu teléfono. Solo si activas el acompañante de IA (opcional), " +
+                    "lo que le envíes viaja a Anthropic para generar la respuesta.",
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {

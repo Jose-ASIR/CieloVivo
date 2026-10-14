@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,7 +48,7 @@ private enum class UrgeStage { TRIGGER, WAIT, OUTCOME, DONE }
  * se surfea con respiración y frases de aceptación, y se registra lo que pasó sin juzgar.
  */
 @Composable
-fun UrgeFlow(onSave: (UrgeLog) -> Unit, onClose: () -> Unit) {
+fun UrgeFlow(onSave: (UrgeLog) -> Unit, onClose: () -> Unit, onCoach: ((String?) -> Unit)? = null) {
     var stage by remember { mutableStateOf(UrgeStage.TRIGGER) }
     var trigger by remember { mutableStateOf("") }
     var intensity by remember { mutableIntStateOf(70) }
@@ -133,6 +134,18 @@ fun UrgeFlow(onSave: (UrgeLog) -> Unit, onClose: () -> Unit) {
                 }
                 Button(onClick = { stage = UrgeStage.OUTCOME }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (finished) "Terminar y registrar" else "El impulso ha bajado")
+                }
+                if (onCoach != null) {
+                    FilledTonalButton(
+                        onClick = {
+                            onCoach(
+                                "Tengo un impulso de hacer un ritual" +
+                                    (if (trigger.isNotBlank()) " (disparador: ${trigger.trim()})" else "") +
+                                    ", intensidad $intensity/100. Lo estoy aplazando. Ayúdame a no hacerlo.",
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Hablar con el acompañante IA") }
                 }
                 OutlinedButton(
                     onClick = { outcome = RitualOutcome.DONE; stage = UrgeStage.OUTCOME },
