@@ -24,6 +24,7 @@ compose-icons = { module = "androidx.compose.material:material-icons-extended" }
 compose-tooling = { module = "androidx.compose.ui:ui-tooling" }
 maplibre = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 junit = { module = "junit:junit", version.ref = "junit" }

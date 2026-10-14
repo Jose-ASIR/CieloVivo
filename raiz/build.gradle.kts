@@ -67,4 +67,5 @@ dependencies {
     implementation(libs.coroutines.android)
     implementation(libs.anthropic.java)
     testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
 }

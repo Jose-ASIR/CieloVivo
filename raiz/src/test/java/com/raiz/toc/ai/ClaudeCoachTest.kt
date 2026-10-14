@@ -1,7 +1,6 @@
 package com.raiz.toc.ai
 
 import com.raiz.toc.data.Theme
-import com.sun.net.httpserver.HttpServer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -15,35 +14,37 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
-import java.net.InetSocketAddress
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 
 /** Prueba las peticiones y el análisis de respuestas contra un servidor local falso. */
 class ClaudeCoachTest {
-    private lateinit var server: HttpServer
-    private val requests = mutableListOf<Pair<Map<String, String>, JsonObject>>()
+    private lateinit var server: MockWebServer
     private var status = 200
     private var contentType = "application/json"
     private var body = ""
 
     @Before
     fun start() {
-        server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
-        server.createContext("/") { ex ->
-            val headers = ex.requestHeaders.mapKeys { it.key.lowercase() }.mapValues { it.value.joinToString(",") }
-            requests += headers to Json.parseToJsonElement(ex.requestBody.readBytes().decodeToString()).jsonObject
-            val bytes = body.toByteArray()
-            ex.responseHeaders.add("Content-Type", contentType)
-            ex.sendResponseHeaders(status, bytes.size.toLong())
-            ex.responseBody.use { it.write(bytes) }
-        }
+        server = MockWebServer()
         server.start()
     }
 
     @After
-    fun stop() = server.stop(0)
+    fun stop() = server.shutdown()
 
-    private fun coach(model: AiModel = AiModel.OPUS) =
-        ClaudeCoach("clave-de-prueba", model, "http://127.0.0.1:${server.address.port}")
+    private fun coach(model: AiModel = AiModel.OPUS): ClaudeCoach {
+        server.enqueue(MockResponse().setResponseCode(status).setHeader("Content-Type", contentType).setBody(body))
+        return ClaudeCoach("clave-de-prueba", model, server.url("/").toString().trimEnd('/'))
+    }
+
+    /** Cabeceras (en minúsculas) y cuerpo JSON de la única petición recibida. */
+    private fun request(): Pair<Map<String, String>, JsonObject> {
+        assertEquals(1, server.requestCount)
+        val r = server.takeRequest()
+        val headers = r.headers.names().associate { it.lowercase() to r.headers.values(it).joinToString(",") }
+        return headers to Json.parseToJsonElement(r.body.readUtf8()).jsonObject
+    }
 
     private fun message(text: String, stop: String = "end_turn") = """
         {"id":"msg_1","type":"message","role":"assistant","model":"claude-opus-5-5",
@@ -62,7 +63,7 @@ class ClaudeCoachTest {
         assertEquals(Theme.CONTAMINATION, result.steps[0].theme)
         assertEquals(100, result.steps[0].expectedDistress)
 
-        val (headers, req) = requests.single()
+        val (headers, req) = request()
         assertEquals("clave-de-prueba", headers["x-api-key"])
         assertTrue(headers["anthropic-beta"]!!.contains("server-side-fallback-2026-07-01"))
         assertEquals("claude-opus-5-5", req["model"]!!.jsonPrimitive.content)
@@ -81,7 +82,7 @@ class ClaudeCoachTest {
         body = message("Si no compruebo la puerta, entrarán a robar esta noche.")
         val p = coach(AiModel.HAIKU).suggestPrediction("Salir de casa", "Comprobar la puerta")
         assertEquals("Si no compruebo la puerta, entrarán a robar esta noche.", p)
-        val (headers, req) = requests.single()
+        val (headers, req) = request()
         assertFalse(req.containsKey("fallbacks"))
         assertFalse(headers["anthropic-beta"].orEmpty().contains("server-side-fallback"))
         assertEquals("low", req["output_config"]!!.jsonObject["effort"]!!.jsonPrimitive.content)
@@ -106,7 +107,7 @@ class ClaudeCoachTest {
 
         assertEquals("Puede que sí, puede que no.", answer)
         assertEquals(listOf("Puede que sí, ", "Puede que sí, puede que no."), partials)
-        val req = requests.single().second
+        val req = request().second
         assertEquals(true, req["stream"]!!.jsonPrimitive.content.toBoolean())
         assertEquals("user", req["messages"]!!.jsonArray[0].jsonObject["role"]!!.jsonPrimitive.content)
         assertTrue(req["system"]!!.jsonPrimitive.content.contains("contexto de prueba"))
